@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/gerrit-rest-api
+gerrit-rest-api.so
+gerrit-rest-api.dylib
+gerrit-rest-api.dll
+gerrit-rest-api.a
+gerrit-rest-api.lib
+gerrit-rest-api-test-*
+*.exe
+*.o
+*.obj
+*.lst
+/out
