@@ -9,7 +9,7 @@
 		"mir-cpuid": "1.2.7",
 		"mir-ion": "0.1.8",
 		"packageversion": "0.0.19",
-		"requests": "2.0.0",
+		"requests": "~master",
 		"unit-threaded": "1.0.15"
 	}
 }
