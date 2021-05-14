@@ -1,3 +1,8 @@
 * gerrit rest api
 
   work with gerrits rest api with dlang.
+[[https://github.com/gizmomogwai/gerrit-rest-api][https://img.shields.io/github/tag/gizmomogwai/gerrit-rest-api.svg?style=flat-square]]
+[[https://travis-ci.org/gizmomogwai/gerrit-rest-api][https://img.shields.io/travis/gizmomogwai/gerrit-rest-api/master.svg?style=flat-square]]
+[[https://codecov.io/gh/gizmomogwai/gerrit-rest-api][https://img.shields.io/codecov/c/github/gizmomogwai/gerrit-rest-api/master.svg?style=flat-square]]
+[[https://gizmomogwai.github.io/gerrit-rest-api][https://img.shields.io/readthedocs/pip.svg?style=flat-square]]
+[[http://code.dlang.org/packages/gerrit-rest-api][https://img.shields.io/dub/v/gerrit-rest-api.svg?style=flat-square]][[http://code.dlang.org/packages/gerrit-rest-api][https://img.shields.io/dub/l/gerrit-rest-api.svg?style=flat-square]][[http://code.dlang.org/packages/gerrit-rest-api][https://img.shields.io/dub/dw/gerrit-rest-api.svg?style=flat-square]]

@@ -1,3 +1,9 @@
+/++
+ + Copyright: Copyright (c) 2021, Christian Koestlin
+ + License: MIT
+ + Authors: Christian Koestlin
+ +/
+
 import std;
 import requests;
 import colored;
@@ -9,7 +15,8 @@ struct Config
     User[] users;
 }
 
-struct User {
+struct User
+{
     string nickName;
     string userName;
 }
@@ -40,17 +47,16 @@ Server getServerState(Server server, string user)
 
 void usage(string executable)
 {
-    throw new Exception(
-            "Usage: %s config (review username|open user|list)".format(executable));
+    throw new Exception("Usage: %s config (review username|open user|list)".format(executable));
 }
 
-string stateForUser(Server[] servers, string user) {
-    return servers
-        .map!(server => getServerState(server, user))
+string stateForUser(Server[] servers, string user)
+{
+    return servers.map!(server => getServerState(server, user))
         .map!((server) {
-                auto result = "%s:%s".format(server.nickName, server.openIssues);
-                return (server.openIssues == 0 ? result.green : result.red).to!string;
-            })
+            auto result = "%s:%s".format(server.nickName, server.openIssues);
+            return (server.openIssues == 0 ? result.green : result.red).to!string;
+        })
         .join(" | ");
 }
 
@@ -82,7 +88,8 @@ void main(string[] args)
         }
         break;
     case "list":
-        foreach (user; users) {
+        foreach (user; users)
+        {
             writeln(user.nickName, ": ", servers.stateForUser(user.userName));
         }
         break;
