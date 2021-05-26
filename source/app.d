@@ -8,6 +8,8 @@ import std;
 import requests;
 import colored;
 import mir.ion.deser.json;
+import std.parallelism;
+import asciitable;
 
 struct Config
 {
@@ -60,6 +62,12 @@ string stateForUser(Server[] servers, string user)
         .join(" | ");
 }
 
+auto stateForUserArray(Server[] servers, string user)
+{
+    return servers.map!(server => getServerState(server, user).openIssues.to!string)
+        .map!(server => (server == "0" ? server.green : server.red).to!string);
+}
+
 void main(string[] args)
 {
     auto executable = args[0];
@@ -73,7 +81,7 @@ void main(string[] args)
     {
     case "review":
         auto user = args[3];
-        writeln(servers.stateForUser(user));
+        servers.stateForUser(user).writeln;
         break;
     case "open":
         auto user = args[3];
@@ -88,10 +96,14 @@ void main(string[] args)
         }
         break;
     case "list":
-        foreach (user; users)
-        {
-            writeln(user.nickName, ": ", servers.stateForUser(user.userName));
-        }
+        auto data = taskPool.amap!(user => [user.nickName].chain(
+                servers.stateForUserArray(user.userName)).array)(users).sort!((a, b) => a < b);
+
+        auto table = new AsciiTable(servers.length + 1);
+        table.header.add(" ").reduce!((head, server) => head.add(server.nickName))(servers);
+        table.reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(data);
+
+        table.format.parts(new UnicodeParts).headerSeparator(true).columnSeparator(true).writeln;
         break;
     default:
         usage(executable);
