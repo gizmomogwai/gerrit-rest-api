@@ -54,18 +54,26 @@ void usage(string executable)
 
 string stateForUser(Server[] servers, string user)
 {
-    return servers.map!(server => getServerState(server, user))
+    // dfmt off
+    return servers
+        .map!(server => getServerState(server, user))
         .map!((server) {
             auto result = "%s:%s".format(server.nickName, server.openIssues);
             return (server.openIssues == 0 ? result.green : result.red).to!string;
         })
-        .join(" | ");
+        .join(" | ")
+    ;
+    // dfmt on
 }
 
 auto stateForUserArray(Server[] servers, string user)
 {
-    return servers.map!(server => getServerState(server, user).openIssues.to!string.rightJustify(6))
-        .map!(server => (server == "0" ? server.green : server.red).to!string);
+    // dfmt off
+    return servers
+        .map!(server => getServerState(server, user).openIssues.to!string.rightJustify(6))
+        .map!(server => (server == "0" ? server.green : server.red).to!string)
+    ;
+    // dfmt on
 }
 
 void main(string[] args)
@@ -96,14 +104,21 @@ void main(string[] args)
         }
         break;
     case "list":
-        auto data = taskPool.amap!(user => [user.nickName].chain(
-                servers.stateForUserArray(user.userName)).array)(users).sort!((a, b) => a < b);
+        // dfmt off
+        auto data = taskPool
+            .amap!(user => [user.nickName].chain(servers.stateForUserArray(user.userName)).array)(users)
+            .sort!((a, b) => a < b);
 
-        auto table = new AsciiTable(servers.length + 1);
-        table.header.add(" ").reduce!((head, server) => head.add(server.nickName.rightJustify(6)))(servers);
-        table.reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(data);
-
-        table.format.parts(new UnicodeParts).headerSeparator(true).columnSeparator(true).writeln;
+        new AsciiTable(servers.length + 1)
+            .header.add(" ").reduce!((head, server) => head.add(server.nickName.rightJustify(6)))(servers)
+            .table
+            .reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(data)
+            .format
+            .parts(new UnicodeParts)
+            .headerSeparator(true)
+            .columnSeparator(true)
+            .writeln;
+        // dfmt on
         break;
     default:
         usage(executable);
