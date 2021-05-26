@@ -64,7 +64,7 @@ string stateForUser(Server[] servers, string user)
 
 auto stateForUserArray(Server[] servers, string user)
 {
-    return servers.map!(server => getServerState(server, user).openIssues.to!string)
+    return servers.map!(server => getServerState(server, user).openIssues.to!string.rightJustify(6))
         .map!(server => (server == "0" ? server.green : server.red).to!string);
 }
 
@@ -100,7 +100,7 @@ void main(string[] args)
                 servers.stateForUserArray(user.userName)).array)(users).sort!((a, b) => a < b);
 
         auto table = new AsciiTable(servers.length + 1);
-        table.header.add(" ").reduce!((head, server) => head.add(server.nickName))(servers);
+        table.header.add(" ").reduce!((head, server) => head.add(server.nickName.rightJustify(6)))(servers);
         table.reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(data);
 
         table.format.parts(new UnicodeParts).headerSeparator(true).columnSeparator(true).writeln;

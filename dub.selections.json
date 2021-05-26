@@ -8,7 +8,7 @@
 		"mir-algorithm": "3.10.60",
 		"mir-core": "1.1.69",
 		"mir-cpuid": "1.2.7",
-		"mir-ion": "0.1.18",
+		"mir-ion": "0.1.21",
 		"packageversion": "0.0.19",
 		"requests": "~master",
 		"unit-threaded": "1.0.15"
