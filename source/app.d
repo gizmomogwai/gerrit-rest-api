@@ -19,7 +19,9 @@ struct Config
 
 struct User
 {
+    /// Name as it appears in the "UI".
     string nickName;
+    /// Name as used by lookup on the servers.
     string userName;
 }
 
@@ -31,12 +33,6 @@ struct Server
     string password;
 
     @serdeIgnore ulong openIssues;
-}
-
-struct UserWithServers
-{
-    User user;
-    Server[] servers;
 }
 
 Server getServerState(Server server, string user)
@@ -91,7 +87,6 @@ void main(string[] args)
     auto config = deserializeJson!(Config)(configFile.readText);
     auto servers = config.servers;
     auto users = config.users;
-    auto usersWithServers = users.map!(user => UserWithServers(user, servers)).array;
     switch (command)
     {
     case "review":
@@ -111,16 +106,17 @@ void main(string[] args)
         break;
     case "list":
         // dfmt off
-        // workaround for double-context problem see: https://forum.dlang.org/post/elstswbwhpvrfnsqeirp@forum.dlang.org
-        static fn = (UserWithServers u) => [u.user.nickName].chain(u.servers.stateForUserAsArray(u.user.userName)).array;
-        auto data = taskPool
-            .amap!(fn)(usersWithServers)
-            .sort!((a, b) => a < b);
+        auto result = new string[][users.length];
+        users.enumerate.parallel.each!(i => result[i.index] = [i.value.nickName].chain(servers.stateForUserAsArray(i.value.userName)).array);
+        // foreach (i, user; users.parallel) {
+        //     result[i] = [user.nickName].chain(servers.stateForUserAsArray(user.userName)).array;
+        // }
+        result.sort!((a, b) => a[0] < b[0]);
 
         new AsciiTable(servers.length + 1)
             .header.add(" ").reduce!((head, server) => head.add(server.nickName.rightJustify(6)))(servers)
             .table
-            .reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(data)
+            .reduce!((table, user) => table.row.reduce!((row, v) => row.add(v))(user).table)(result)
             .format
             .parts(new UnicodeParts)
             .headerSeparator(true)
