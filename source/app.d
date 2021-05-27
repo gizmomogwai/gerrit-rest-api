@@ -33,6 +33,12 @@ struct Server
     @serdeIgnore ulong openIssues;
 }
 
+struct UserWithServers
+{
+    User user;
+    Server[] servers;
+}
+
 Server getServerState(Server server, string user)
 {
     auto request = new Request;
@@ -52,7 +58,7 @@ void usage(string executable)
     throw new Exception("Usage: %s config (review username|open user|list)".format(executable));
 }
 
-string stateForUser(Server[] servers, string user)
+string stateForUserAsString(Server[] servers, string user)
 {
     // dfmt off
     return servers
@@ -66,7 +72,7 @@ string stateForUser(Server[] servers, string user)
     // dfmt on
 }
 
-auto stateForUserArray(Server[] servers, string user)
+auto stateForUserAsArray(Server[] servers, string user)
 {
     // dfmt off
     return servers
@@ -85,11 +91,12 @@ void main(string[] args)
     auto config = deserializeJson!(Config)(configFile.readText);
     auto servers = config.servers;
     auto users = config.users;
+    auto usersWithServers = users.map!(user => UserWithServers(user, servers)).array;
     switch (command)
     {
     case "review":
         auto user = args[3];
-        servers.stateForUser(user).writeln;
+        servers.stateForUserAsString(user).writeln;
         break;
     case "open":
         auto user = args[3];
@@ -98,15 +105,16 @@ void main(string[] args)
             if (server.openIssues > 0)
             {
                 auto url = "%s/q/status:open+owner:%s".format(server.url, user);
-                writeln("open ", url);
                 std.process.execute(["open", url]);
             }
         }
         break;
     case "list":
         // dfmt off
+        // workaround for double-context problem see: https://forum.dlang.org/post/elstswbwhpvrfnsqeirp@forum.dlang.org
+        static fn = (UserWithServers u) => [u.user.nickName].chain(u.servers.stateForUserAsArray(u.user.userName)).array;
         auto data = taskPool
-            .amap!(user => [user.nickName].chain(servers.stateForUserArray(user.userName)).array)(users)
+            .amap!(fn)(usersWithServers)
             .sort!((a, b) => a < b);
 
         new AsciiTable(servers.length + 1)
