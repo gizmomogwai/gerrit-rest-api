@@ -107,10 +107,10 @@ void main(string[] args)
     case "list":
         // dfmt off
         auto result = new string[][users.length];
-        users.enumerate.parallel.each!(i => result[i.index] = [i.value.nickName].chain(servers.stateForUserAsArray(i.value.userName)).array);
-        // foreach (i, user; users.parallel) {
-        //     result[i] = [user.nickName].chain(servers.stateForUserAsArray(user.userName)).array;
-        // }
+        foreach (i, user; users.parallel)
+        {
+            result[i] = [user.nickName].chain(servers.stateForUserAsArray(user.userName)).array;
+        }
         result.sort!((a, b) => a[0] < b[0]);
 
         new AsciiTable(servers.length + 1)
