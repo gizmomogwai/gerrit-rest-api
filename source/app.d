@@ -7,7 +7,7 @@
 import std;
 import requests;
 import colored;
-import mir.ion.deser.json;
+import mir.deser.json;
 import std.parallelism;
 import asciitable;
 
