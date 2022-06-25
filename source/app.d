@@ -89,6 +89,30 @@ void main(string[] args)
     auto users = config.users;
     switch (command)
     {
+    case "version":
+        import asciitable;
+        import packageinfo;
+        import colored;
+
+        // dfmt off
+        auto table = packageinfo
+            .getPackages
+            .sort!("a.name < b.name")
+            .fold!((table, p) =>
+                   table
+                   .row
+                   .add(p.name.white)
+                   .add(p.semVer.lightGray)
+                   .add(p.license.lightGray).table)
+            (new AsciiTable(3)
+             .header
+             .add("Package".bold)
+             .add("Version".bold)
+             .add("License".bold).table);
+        // dfmt on
+        stderr.writeln("Packageinfo:\n", table.format.prefix("    ")
+                       .headerSeparator(true).columnSeparator(true).to!string);
+        break;
     case "review":
         auto user = args[3];
         servers.stateForUserAsString(user).writeln;
