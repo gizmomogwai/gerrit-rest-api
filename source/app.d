@@ -4,17 +4,34 @@
  + Authors: Christian Koestlin
  +/
 
-import std;
-import requests;
-import colored;
-import mir.deser.json;
-import std.parallelism;
-import asciitable;
-
+import asciitable : AsciiTable, UnicodeParts;
+import colored : green, red;
+import mir.deser.json : deserializeJson;
+import mir.serde : serdeIgnore;
+import packageinfo : packages;
+import requests : BasicAuthentication, queryParams, Request;
+import std.algorithm : filter, fold, map, reduce, sort;
+import std.array : array, join;
+import std.conv : to;
+import std.file : readText;
+import std.json : parseJSON;
+import std.parallelism : parallel;
+import std.process : execute;
+import std.range : chain;
+import std.stdio : stderr, writeln;
+import std.string : format, rightJustify, strip;
 struct Config
 {
     Server[] servers;
     User[] users;
+}
+
+string mapNickNameToUserName(User[] users, string nickName) {
+    auto result = users.filter!(user => user.nickName == nickName).map!(user => user.userName);
+    if (result.empty) {
+        throw new Exception("Cannot find nickname '%s' in configuration".format(nickName).red.to!string);
+    }
+    return result.front;
 }
 
 struct User
@@ -73,12 +90,12 @@ auto stateForUserAsArray(Server[] servers, string user)
     // dfmt off
     return servers
         .map!(server => getServerState(server, user).openIssues.to!string.rightJustify(6))
-        .map!(server => (server == "0" ? server.green : server.red).to!string)
+        .map!(server => (server.strip == "0" ? server.green : server.red).to!string)
     ;
     // dfmt on
 }
 
-void main(string[] args)
+int main(string[] args)
 {
     auto executable = args[0];
 
@@ -91,12 +108,11 @@ void main(string[] args)
     {
     case "version":
         import asciitable;
-        import packageinfo;
         import colored;
+        import packageinfo;
 
         // dfmt off
-        auto table = packageinfo
-            .getPackages
+        auto table = packages
             .sort!("a.name < b.name")
             .fold!((table, p) =>
                    table
@@ -114,17 +130,19 @@ void main(string[] args)
                        .headerSeparator(true).columnSeparator(true).to!string);
         break;
     case "review":
-        auto user = args[3];
+        auto nickName = args[3];
+        auto user = users.mapNickNameToUserName(nickName);
         servers.stateForUserAsString(user).writeln;
         break;
     case "open":
-        auto user = args[3];
+        auto nickName = args[3];
+        auto user = users.mapNickNameToUserName(nickName);
         foreach (server; servers.map!(server => getServerState(server, user)))
         {
             if (server.openIssues > 0)
             {
                 auto url = "%s/q/status:open+owner:%s".format(server.url, user);
-                std.process.execute(["open", url]);
+                ["open", url].execute();
             }
         }
         break;
@@ -152,4 +170,5 @@ void main(string[] args)
         usage(executable);
         break;
     }
+    return 0;
 }

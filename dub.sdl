@@ -10,7 +10,6 @@ dependency "asciitable" version="~>0.0.14"
 x:ddoxFilterArgs "--min-protection=Public"
 targetPath "out/exe"
 
-preGenerateCommands "dub run packageinfo"
+preGenerateCommands "$DUB run packageinfo"
 sourcePaths "source" "out/generated/packageinfo"
 importPaths "source" "out/generated/packageinfo"
-
