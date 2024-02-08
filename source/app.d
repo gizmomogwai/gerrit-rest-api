@@ -4,8 +4,9 @@
  + Authors: Christian Koestlin
  +/
 
+import argparse;
 import asciitable : AsciiTable, UnicodeParts;
-import colored : green, red;
+import colored : bold, green, lightGray, red, white, blue;
 import mir.deser.json : deserializeJson;
 import mir.serde : serdeIgnore;
 import packageinfo : packages;
@@ -20,16 +21,21 @@ import std.process : execute;
 import std.range : chain;
 import std.stdio : stderr, writeln;
 import std.string : format, rightJustify, strip;
+
 struct Config
 {
     Server[] servers;
     User[] users;
 }
 
-string mapNickNameToUserName(User[] users, string nickName) {
-    auto result = users.filter!(user => user.nickName == nickName).map!(user => user.userName);
-    if (result.empty) {
-        throw new Exception("Cannot find nickname '%s' in configuration".format(nickName).red.to!string);
+string mapNickNameToUserName(User[] users, string nickName)
+{
+    auto result = users.filter!(user => user.nickName == nickName)
+        .map!(user => user.userName);
+    if (result.empty)
+    {
+        throw new Exception("Cannot find nickname '%s' in configuration".format(nickName)
+                .red.to!string);
     }
     return result.front;
 }
@@ -78,83 +84,94 @@ string stateForUserAsString(Server[] servers, string user)
         .map!(server => getServerState(server, user))
         .map!((server) {
             auto result = "%s:%s".format(server.nickName, server.openIssues);
-            return (server.openIssues == 0 ? result.green : result.red).to!string;
+            return Arguments.withColors ? (server.openIssues == 0 ? result.green : result.red).to!string : result;
         })
         .join(" | ")
     ;
     // dfmt on
 }
 
-auto stateForUserAsArray(Server[] servers, string user)
+auto stateForUserAsArray(Server[] servers, string user, bool colors)
 {
     // dfmt off
     return servers
         .map!(server => getServerState(server, user).openIssues.to!string.rightJustify(6))
-        .map!(server => (server.strip == "0" ? server.green : server.red).to!string)
+        .map!(server => colors ? (server.strip == "0" ? server.green : server.red).to!string : server)
     ;
     // dfmt on
 }
 
-int main(string[] args)
+@(Command("list"))
+struct List
 {
-    auto executable = args[0];
+}
 
-    auto configFile = args[1];
-    auto command = args[2];
-    auto config = deserializeJson!(Config)(configFile.readText);
+@(Command("review"))
+struct Review
+{
+    string nickName;
+}
+
+@(Command("open"))
+struct Open
+{
+    string nickName;
+}
+
+
+auto color(T)(string s, T color)
+{
+    writeln(Arguments.withColors ? "true" : "false", " for ", s);
+    return Arguments.withColors ? color(s).to!string : s;
+}
+
+//dfmt off
+@(Command(null)
+  .Epilog(() => "PackageInfo:\n" ~ packages
+                        .sort!("a.name < b.name")
+                        .fold!((table, p) =>
+                               table
+                               .row
+                                   .add(p.name.color(&white))
+                                   .add(p.semVer.color(&lightGray))
+                                   .add(p.license.color(&lightGray)).table)
+                            (new AsciiTable(3)
+                                .header
+                                    .add("Package".color(&bold))
+                                    .add("Version".color(&bold))
+                                    .add("License".color(&bold)).table)
+                        .format
+                            .prefix("    ")
+                            .headerSeparator(true)
+                            .columnSeparator(true)
+                        .to!string))
+// dfmt on
+struct Arguments
+{
+    @ArgumentGroup("Common arguments")
+    {
+        @(NamedArgument("withColors", "c"))
+        static auto withColors = ansiStylingArgument;
+        @(NamedArgument("config").Placeholder("CONFIG").Required())
+        string config;
+    }
+    SubCommand!(Default!List, Review, Open) command;
+}
+
+int main_(Arguments arguments)
+{
+    auto config = deserializeJson!(Config)(arguments.config.readText);
     auto servers = config.servers;
     auto users = config.users;
-    switch (command)
-    {
-    case "version":
-        import asciitable;
-        import colored;
-        import packageinfo;
-
-        // dfmt off
-        auto table = packages
-            .sort!("a.name < b.name")
-            .fold!((table, p) =>
-                   table
-                   .row
-                   .add(p.name.white)
-                   .add(p.semVer.lightGray)
-                   .add(p.license.lightGray).table)
-            (new AsciiTable(3)
-             .header
-             .add("Package".bold)
-             .add("Version".bold)
-             .add("License".bold).table);
-        // dfmt on
-        stderr.writeln("Packageinfo:\n", table.format.prefix("    ")
-                       .headerSeparator(true).columnSeparator(true).to!string);
-        break;
-    case "review":
-        auto nickName = args[3];
-        auto user = users.mapNickNameToUserName(nickName);
-        servers.stateForUserAsString(user).writeln;
-        break;
-    case "open":
-        auto nickName = args[3];
-        auto user = users.mapNickNameToUserName(nickName);
-        foreach (server; servers.map!(server => getServerState(server, user)))
-        {
-            if (server.openIssues > 0)
-            {
-                auto url = "%s/q/status:open+owner:%s".format(server.url, user);
-                ["open", url].execute();
-            }
-        }
-        break;
-    case "list":
+    return arguments.command.match!((List list) {
         // dfmt off
         auto result = new string[][users.length];
+        bool colors = Arguments.withColors ? true : false;
         foreach (i, user; users.parallel)
         {
-            result[i] = [user.nickName].chain(servers.stateForUserAsArray(user.userName)).array;
+            result[i] = [user.nickName].chain(servers.stateForUserAsArray(user.userName, colors)).array;
         }
         result.sort!((a, b) => a[0] < b[0]);
-
         new AsciiTable(servers.length + 1)
             .header.add(" ").reduce!((head, server) => head.add(server.nickName.rightJustify(6)))(servers)
             .table
@@ -163,12 +180,27 @@ int main(string[] args)
             .parts(new UnicodeParts)
             .headerSeparator(true)
             .columnSeparator(true)
-            .writeln;
+            .writeln
+        ;
         // dfmt on
-        break;
-    default:
-        usage(executable);
-        break;
-    }
-    return 0;
+        return 0;
+        }, (Review review) {
+        auto user = users.mapNickNameToUserName(review.nickName);
+        servers.stateForUserAsString(user).writeln;
+        return 0;
+    }, (Open open) {
+        auto user = users.mapNickNameToUserName(open.nickName);
+        foreach (server; servers.map!(server => getServerState(server, user)))
+        {
+            if (server.openIssues > 0)
+            {
+                auto url = "%s/q/status:open+owner:%s".format(server.url, user);
+                ["open", url].execute();
+            }
+        }
+        return 0;
+    },
+    );
 }
+
+mixin CLI!(Arguments).main!((arguments) { return main_(arguments); });
