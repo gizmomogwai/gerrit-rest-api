@@ -21,6 +21,7 @@ import std.process : execute;
 import std.range : chain;
 import std.stdio : stderr, writeln;
 import std.string : format, rightJustify, strip;
+import std.system : os, OS;
 
 struct Config
 {
@@ -195,7 +196,7 @@ int main_(Arguments arguments)
             if (server.openIssues > 0)
             {
                 auto url = "%s/q/status:open+owner:%s".format(server.url, user);
-                ["open", url].execute();
+                [os == OS.osx ? "open" : "xdg-open", url].execute();
             }
         }
         return 0;
