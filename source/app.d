@@ -22,6 +22,7 @@ import std.range : chain;
 import std.stdio : stderr, writeln;
 import std.string : format, rightJustify, strip;
 import std.system : os, OS;
+import std.sumtype : SumType, match;
 
 struct Config
 {
@@ -64,7 +65,7 @@ Server getServerState(Server server, string user)
     auto request = new Request;
     request.authenticator = new BasicAuthentication(server.userName, server.password);
     request.verbosity = 0;
-    auto p = queryParams("q", "status:open owner:%s".format(user));
+    auto p = queryParams("q", "status:open owner:%s -is:wip".format(user));
     auto response = request.get("%s/a/changes/".format(server.url), p);
     auto responseString = response.responseBody.to!string;
     // see https://gerrit-review.googlesource.com/Documentation/rest-api.html#output why stripping is needed
@@ -156,7 +157,8 @@ struct Arguments
         @(NamedArgument("config").Placeholder("CONFIG").Required())
         string config;
     }
-    SubCommand!(Default!List, Review, Open) command;
+    @SubCommands
+    SumType!(Default!List, Review, Open) command;
 }
 
 int main_(Arguments arguments)
@@ -195,7 +197,7 @@ int main_(Arguments arguments)
         {
             if (server.openIssues > 0)
             {
-                auto url = "%s/q/status:open+owner:%s".format(server.url, user);
+                auto url = "%s/q/status:open+owner:%s+-is:wip".format(server.url, user);
                 [os == OS.osx ? "open" : "xdg-open", url].execute();
             }
         }
