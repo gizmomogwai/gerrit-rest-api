@@ -4,7 +4,8 @@
  + Authors: Christian Koestlin
  +/
 
-import argparse;
+import argparse : SubCommand, Command, ArgumentGroup, NamedArgument,
+    ansiStylingArgument, Placeholder, Required, Default, Epilog, CLI, match;
 import asciitable : AsciiTable, UnicodeParts;
 import colored : bold, green, lightGray, red, white, blue;
 import mir.deser.json : deserializeJson;
@@ -22,7 +23,6 @@ import std.range : chain;
 import std.stdio : stderr, writeln;
 import std.string : format, rightJustify, strip;
 import std.system : os, OS;
-import std.sumtype : SumType, match;
 
 struct Config
 {
@@ -111,19 +111,19 @@ struct List
 @(Command("review"))
 struct Review
 {
+    @(NamedArgument.Required)
     string nickName;
 }
 
 @(Command("open"))
 struct Open
 {
+    @(NamedArgument.Required)
     string nickName;
 }
 
-
 auto color(T)(string s, T color)
 {
-    writeln(Arguments.withColors ? "true" : "false", " for ", s);
     return Arguments.withColors ? color(s).to!string : s;
 }
 
@@ -147,18 +147,17 @@ auto color(T)(string s, T color)
                             .headerSeparator(true)
                             .columnSeparator(true)
                         .to!string))
-// dfmt on
+ // dfmt on
 struct Arguments
 {
     @ArgumentGroup("Common arguments")
     {
         @(NamedArgument("withColors", "c"))
         static auto withColors = ansiStylingArgument;
-        @(NamedArgument("config").Placeholder("CONFIG").Required())
+        @(NamedArgument("config").Placeholder("CONFIG").Required)
         string config;
     }
-    @SubCommands
-    SumType!(Default!List, Review, Open) command;
+    SubCommand!(Default!List, Review, Open) command;
 }
 
 int main_(Arguments arguments)
@@ -187,7 +186,7 @@ int main_(Arguments arguments)
         ;
         // dfmt on
         return 0;
-        }, (Review review) {
+    }, (Review review) {
         auto user = users.mapNickNameToUserName(review.nickName);
         servers.stateForUserAsString(user).writeln;
         return 0;
@@ -202,8 +201,7 @@ int main_(Arguments arguments)
             }
         }
         return 0;
-    },
-    );
+    },);
 }
 
 mixin CLI!(Arguments).main!((arguments) { return main_(arguments); });
