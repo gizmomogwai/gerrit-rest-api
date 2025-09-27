@@ -4,8 +4,8 @@
  + Authors: Christian Koestlin
  +/
 
-import argparse : SubCommand, Command, ArgumentGroup, NamedArgument,
-    ansiStylingArgument, Placeholder, Required, Default, Epilog, CLI, match;
+import argparse : SubCommand, Command, ArgumentGroup, NamedArgument, Description,
+    ansiStylingArgument, Placeholder, Required, Default, Epilog, CLI, matchCmd;
 import asciitable : AsciiTable, UnicodeParts;
 import colored : bold, green, lightGray, red, white, blue;
 import mir.deser.json : deserializeJson;
@@ -103,19 +103,19 @@ auto stateForUserAsArray(Server[] servers, string user, bool colors)
     // dfmt on
 }
 
-@(Command("list"))
+@(Command("list").Description("Show list of all open changes for all people"))
 struct List
 {
 }
 
-@(Command("review"))
+@(Command("review").Description("Show number of open changes"))
 struct Review
 {
     @(NamedArgument.Required)
     string nickName;
 }
 
-@(Command("open"))
+@(Command("open").Description("Open browser to open changes of one person"))
 struct Open
 {
     @(NamedArgument.Required)
@@ -165,7 +165,7 @@ int main_(Arguments arguments)
     auto config = deserializeJson!(Config)(arguments.config.readText);
     auto servers = config.servers;
     auto users = config.users;
-    return arguments.command.match!((List list) {
+    return arguments.command.matchCmd!((List list) {
         // dfmt off
         auto result = new string[][users.length];
         bool colors = Arguments.withColors ? true : false;
